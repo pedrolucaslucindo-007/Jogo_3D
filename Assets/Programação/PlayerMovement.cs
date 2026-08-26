@@ -10,17 +10,32 @@ public class PlayerMovement : MonoBehaviour
     public float jumpHeight = 2f;
     public float gravity = -9.81f;
 
+    [Header("Mouse")]
+    public Transform playerCamera;
+    public float mouseSensitivity = 0.15f;
+    public float maxLookAngle = 80f;
+
     private CharacterController controller;
     private Vector3 velocity;
+    private float cameraRotationX = 0f;
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
+
+        // Prende o mouse no centro da tela
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     void Update()
     {
-        // Entrada do teclado
+        Movement();
+        MouseLook();
+    }
+
+    void Movement()
+    {
         float x = 0f;
         float z = 0f;
 
@@ -36,15 +51,13 @@ public class PlayerMovement : MonoBehaviour
         if (Keyboard.current.sKey.isPressed)
             z = -1f;
 
-        // Direção do movimento
         Vector3 move = transform.right * x + transform.forward * z;
 
-        // Evita andar mais rápido na diagonal
         move = Vector3.ClampMagnitude(move, 1f);
 
         controller.Move(move * speed * Time.deltaTime);
 
-        // Verifica se está no chão
+        // Gravidade
         if (controller.isGrounded && velocity.y < 0)
         {
             velocity.y = -2f;
@@ -56,9 +69,27 @@ public class PlayerMovement : MonoBehaviour
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
 
-        // Gravidade
         velocity.y += gravity * Time.deltaTime;
 
         controller.Move(velocity * Time.deltaTime);
+    }
+
+    void MouseLook()
+    {
+        Vector2 mouseDelta = Mouse.current.delta.ReadValue();
+
+        // Esquerda / direita
+        transform.Rotate(Vector3.up * mouseDelta.x * mouseSensitivity);
+
+        // Cima / baixo
+        cameraRotationX -= mouseDelta.y * mouseSensitivity;
+
+        cameraRotationX = Mathf.Clamp(
+            cameraRotationX,
+            -maxLookAngle,
+            maxLookAngle
+        );
+
+        playerCamera.localRotation = Quaternion.Euler(cameraRotationX, 0f, 0f);
     }
 }
